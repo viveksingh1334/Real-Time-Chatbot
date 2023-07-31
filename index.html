@@ -10,15 +10,47 @@
         <button onclick="sendMessage()">Send</button>
     </div>
 
+    <div id="login">
+        <h2>Login</h2>
+        <input type="text" id="usernameInput" placeholder="Username">
+        <input type="password" id="passwordInput" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
     <script>
-        const ws = new WebSocket("ws://localhost:8080/ws");
+        let ws;
         const messagesDiv = document.getElementById("messages");
         const messageInput = document.getElementById("messageInput");
+        const usernameInput = document.getElementById("usernameInput");
+        const passwordInput = document.getElementById("passwordInput");
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            messagesDiv.innerHTML += "<p><strong>" + data.username + "</strong>: " + data.content + "</p>";
-        };
+        function login() {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            fetch("/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Login failed");
+                    }
+                    ws = new WebSocket("ws://localhost:8080/ws");
+                    ws.onmessage = function (event) {
+                        const data = JSON.parse(event.data);
+                        messagesDiv.innerHTML += "<p><strong>" + data.username + "</strong>: " + data.content + "</p>";
+                    };
+                    document.getElementById("login").style.display = "none";
+                    document.getElementById("chat").style.display = "block";
+                })
+                .catch(error => {
+                    alert(error);
+                });
+        }
 
         function sendMessage() {
             const content = messageInput.value;
